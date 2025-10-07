@@ -137,7 +137,7 @@ graph TB
 - **FastAPI** - High-performance async Python framework
 - **Pydantic** - Data validation and serialization
 - **Motor** - Async MongoDB driver
-- **OpenAI Python SDK** - Direct OpenAI API integration for AI analysis
+- **Emergent Integrations** - Universal LLM API client
 - **Python-Jose** - JWT token handling
 - **Uvicorn** - ASGI server
 
@@ -210,7 +210,7 @@ chmod +x setup.sh
 ```
 
 **📝 Note**: The `.env` file is **included in the repository** with pre-configured values for local development, including:
-- ✅ **OPENAI_API_KEY** - Configured for AI analysis features
+- ✅ **EMERGENT_LLM_KEY** - Pre-configured and working
 - ✅ **MongoDB credentials** - Ready for local development
 - ✅ **Port configurations** - Optimized for local setup
 - ✅ **CORS settings** - Configured for localhost development
@@ -517,21 +517,16 @@ REDIS_PORT=6379
 
 The application requires AI/LLM API keys for intelligent proxy analysis:
 
-#### OpenAI API Configuration (Current Setup)
+#### Option 1: Universal Emergent Key (Currently Configured)
 ```env
-# OpenAI API Key for AI analysis and migration features
-OPENAI_API_KEY=sk-your-openai-api-key-here  # ✅ Update with your key
+# Single key for OpenAI, Anthropic, and Google models
+EMERGENT_LLM_KEY=sk-emergent-dB150Ec759fA280B2C  # ✅ Already configured
 ```
 
-**To get your OpenAI API key:**
-1. Go to https://platform.openai.com/account/api-keys
-2. Click "Create new secret key" 
-3. Copy the key and replace the placeholder above
-
-#### Alternative: Individual Provider Keys (Optional)
+#### Option 2: Individual API Keys
 ```env
-# If you prefer to use other providers directly
-ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+# OpenAI API Key (for ChatGPT 4.1)
+OPENAI_API_KEY=sk-proj-your-openai-key-here
 
 # Anthropic API Key (for Claude models)
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
@@ -566,7 +561,7 @@ MONGO_PORT=27017
 REDIS_PORT=6379
 
 # Security Keys
-OPENAI_API_KEY=sk-your-openai-api-key-here  # Update with your OpenAI key
+EMERGENT_LLM_KEY=sk-emergent-dB150Ec759fA280B2C  # ✅ Working
 JWT_SECRET=your-super-secure-jwt-secret-key-minimum-32-characters
 ENCRYPTION_KEY=your-32-character-encryption-key-12
 
@@ -782,7 +777,7 @@ docker-compose exec mongodb mongosh -u apigee_admin -p
 #### API Key Issues
 ```bash
 # Verify LLM key from .env
-echo $OPENAI_API_KEY
+echo $EMERGENT_LLM_KEY
 
 # Check backend logs
 docker-compose logs backend | grep -i "key\|auth\|error"
