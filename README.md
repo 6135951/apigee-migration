@@ -49,7 +49,7 @@ The **Apigee Migration Tool** is an enterprise-grade application designed to aut
 ## ✨ Key Features
 
 ### 🤖 AI-Powered Analysis
-- **ChatGPT 4.1 Integration** for intelligent proxy analysis
+- **OpenAI GPT-4o Integration** for intelligent proxy analysis
 - **Complexity Scoring** (0-100) with detailed breakdowns
 - **Custom Policy Detection** with migration recommendations
 - **Risk Assessment** for complex migrations
@@ -59,6 +59,13 @@ The **Apigee Migration Tool** is an enterprise-grade application designed to aut
 - **Step-by-step Validation** with user approval workflow
 - **Policy Conversion Preview** before execution
 - **Background Processing** with progress tracking
+
+### 📚 API Documentation & Testing
+- **Swagger/OpenAPI Migration** from 2.0 to 3.0+ with Apigee X optimization
+- **Side-by-side Documentation Comparison** (Original vs Migrated)
+- **Interactive API Testing Console** with environment switching
+- **Automated Security & Compliance Validation**
+- **Real-time Endpoint Testing** with response validation
 
 ### 🖥️ Interactive UI/UX
 - **Modern Glass-morphism Design** with responsive layout
@@ -163,7 +170,8 @@ apigee-migration-tool/
 │   │   │   ├── Dashboard.js        # Main dashboard
 │   │   │   ├── Migration.js        # Migration center
 │   │   │   ├── ProxyAnalysis.js    # Analysis results
-│   │   │   └── ProxyUpload.js      # File upload interface
+│   │   │   ├── ProxyUpload.js      # File upload interface
+│   │   │   └── ApiDocumentation.js # API docs & testing interface
 │   │   ├── App.js                  # Main application component
 │   │   ├── App.css                 # Global styles
 │   │   └── index.js               # Application entry point
@@ -237,6 +245,141 @@ After setup completes:
 curl http://localhost:8001/api/          # Backend API
 curl http://localhost:3000               # Frontend
 docker-compose ps                        # Service status
+```
+
+## 📖 How to Use the Application
+
+### 🎯 Complete Migration Workflow
+
+The Apigee Migration Tool provides a **5-tab interface** for comprehensive proxy and API documentation migration:
+
+#### **1. 🏠 Dashboard**
+- View migration statistics and analytics
+- Monitor active proxy analyses and migrations
+- Access quick metrics and recent activity
+
+#### **2. 📤 Upload Apigee Proxy**
+- **XML/JSON Files**: Upload individual proxy configuration files
+- **ZIP Bundles**: Upload complete Apigee Edge proxy bundles (recommended)
+  ```
+  BOOMI-OrderManagement.zip
+  └── apiproxy/
+      ├── BOOMI-OrderManagement.xml    # Main proxy config
+      ├── policies/                     # Policy definitions
+      ├── proxies/                      # Proxy endpoints
+      ├── targets/                      # Target endpoints
+      └── resources/                    # JavaScript/other resources
+  ```
+- **File Size Limits**: Up to 100MB for ZIP files, standard limits for XML/JSON
+
+#### **3. 🔍 Analysis Results**
+- **AI-Powered Analysis**: View detailed complexity assessments
+- **Policy Breakdown**: See all detected policies and their Apigee X equivalents
+- **Risk Assessment**: Understand migration complexity (0-100 score)
+- **Policy Editing**: Edit and customize policy configurations inline
+- **Recommendations**: Get AI-generated migration guidance
+
+#### **4. ⚙️ Migration Center**
+- **Pre-Migration Preview**: Review all changes before execution
+- **Real-time Migration**: Monitor live migration progress with console logs
+- **Policy Conversion**: AI converts policies from Edge to Apigee X format
+- **Step-by-step Validation**: Approve each migration phase
+- **Background Processing**: Track multiple migrations simultaneously
+
+#### **5. 📚 API Documentation & Testing** ⭐ *NEW*
+- **Upload Swagger/OpenAPI**: Support for JSON/YAML API documentation (up to 10MB)
+- **Smart Conversion**: AI migrates Swagger 2.0 → OpenAPI 3.0 with Apigee X optimization
+- **Side-by-side Comparison**: View original vs migrated API specifications
+- **Interactive Testing**: Built-in API testing console with environment switching
+- **Security Validation**: Automated compliance and security policy checking
+- **Endpoint Testing**: Real-time API endpoint validation with response analysis
+
+### 🔄 Typical Usage Flow
+
+```mermaid
+graph LR
+    A[Upload Proxy ZIP] --> B[AI Analysis]
+    B --> C[Review Results]
+    C --> D[Start Migration]
+    D --> E[Upload API Docs]
+    E --> F[Test Migrated APIs]
+    F --> G[Validation Complete]
+```
+
+### 💡 Pro Tips
+
+- **Use ZIP bundles** for complete proxy analysis including all policies and resources
+- **Review AI recommendations** before starting migration for better results
+- **Test API endpoints** after migration to ensure functionality
+- **Enable OpenAI API key** for full AI-powered analysis capabilities
+
+## 🧪 Testing & Demo
+
+### 🚀 API Documentation & Testing Demo
+
+The application includes comprehensive automated tests and demo scripts for the new API Documentation & Testing features:
+
+```bash
+# Run the complete demo with sample data (defaults to localhost:3000)
+cd tests
+python run_api_documentation_demo.py
+
+# Run specific API documentation tests
+python test_api_documentation.py
+
+# Test with custom server URL
+python run_api_documentation_demo.py http://localhost:3000
+python run_api_documentation_demo.py https://your-production-server.com
+
+# Use environment variables for configuration
+TEST_BASE_URL=https://staging.example.com python run_api_documentation_demo.py
+TEST_API_TIMEOUT=60 python test_api_documentation.py
+
+# Available environment variables:
+# TEST_BASE_URL          - Base URL for testing (default: http://localhost:3000)
+# TEST_BACKEND_PORT      - Backend port (default: 8001)  
+# TEST_FRONTEND_PORT     - Frontend port (default: 3000)
+# TEST_API_TIMEOUT       - API request timeout in seconds (default: 30)
+# TEST_MAX_FILE_SIZE_MB  - Maximum file size for testing (default: 100)
+```
+
+### 📁 Sample Data Included
+
+The `/tests/sample_data/` directory contains real-world API specifications for testing:
+
+- **`boomi-orders-swagger.json`** - Complex Swagger 2.0 specification
+  - Order management system with multiple endpoints
+  - Authentication schemes (Basic, API Key, OAuth2)
+  - Comprehensive data models and validation
+
+- **`customer-api-openapi.yaml`** - Modern OpenAPI 3.0 specification  
+  - Customer management with CRUD operations
+  - JWT and API key authentication
+  - Advanced features like pagination and preferences
+
+### 🔧 Test Coverage
+
+The automated test suite covers:
+
+- ✅ **File Upload Validation** - JSON/YAML format support, size limits
+- ✅ **AI Conversion Testing** - Swagger 2.0 → OpenAPI 3.0 transformation
+- ✅ **Apigee X Optimization** - Security policies, rate limiting, extensions
+- ✅ **Error Handling** - Invalid files, oversized uploads, network errors
+- ✅ **End-to-end Workflow** - Complete upload → conversion → validation flow
+
+### 📊 Expected Test Results
+
+When running with a valid OpenAI API key:
+```
+📊 TEST SUMMARY
+======================================================================
+Total Tests: 8
+Passed: 8
+Failed: 0
+Success Rate: 100.0%
+Duration: 15.32 seconds
+
+🎉 ALL TESTS PASSED!
 ```
 
 ## 💻 Local Development
@@ -590,15 +733,26 @@ REACT_APP_BACKEND_URL=http://localhost:8001
 
 ### 📤 Proxy Upload
 - **Drag & Drop Interface** - Easy file upload
-- **Format Support** - XML and JSON proxy configurations
-- **Validation** - Automatic file format verification
+- **Multi-Format Support** - XML, JSON, and ZIP proxy bundles (up to 100MB)
+- **ZIP Bundle Extraction** - Complete Apigee Edge proxy bundle processing
+- **Validation** - Automatic file format and structure verification
 - **Progress Tracking** - Upload status with progress bars
 
 ### 🔍 Analysis Engine
-- **AI-Powered Assessment** - ChatGPT 4.1 complexity analysis
+- **AI-Powered Assessment** - OpenAI GPT-4o complexity analysis
 - **Policy Detection** - Automatic policy identification and mapping
 - **Risk Assessment** - Migration complexity scoring (0-100)
 - **Recommendations** - Intelligent migration guidance
+- **ZIP Bundle Analysis** - Full proxy structure analysis including policies, resources, and endpoints
+
+### 📚 API Documentation & Testing
+- **Swagger/OpenAPI Upload** - Support for JSON and YAML formats (up to 10MB)
+- **Smart Conversion** - AI-powered migration from Swagger 2.0 to OpenAPI 3.0
+- **Apigee X Optimization** - Automatic addition of security policies and rate limiting
+- **Documentation Comparison** - Side-by-side view of original vs migrated specs
+- **Interactive Testing** - Built-in API testing console with multiple environments
+- **Endpoint Validation** - Real-time API endpoint testing and response validation
+- **Security Analysis** - Automated security policy validation and compliance checking
 
 ### ⚙️ Migration Center
 - **Real-time Execution** - Live migration progress tracking

@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 class EnhancedApigeeAPITester:
-    def __init__(self, base_url="https://proxy-zip-support.preview.emergentagent.com"):
+    def __init__(self, base_url="http://localhost:3000"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0

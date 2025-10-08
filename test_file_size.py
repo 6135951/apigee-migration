@@ -51,8 +51,10 @@ def test_file_size(size_mb, expected_status):
     files = {'file': (f'test-{size_mb}mb.zip', zip_content, 'application/zip')}
     
     try:
+        # Use configurable base URL
+        base_url = "http://localhost:3000"
         response = requests.post(
-            "https://proxy-zip-support.preview.emergentagent.com/api/upload-proxy", 
+            f"{base_url}/api/upload-proxy", 
             files=files, 
             timeout=60
         )

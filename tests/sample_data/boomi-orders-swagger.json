@@ -1,0 +1,527 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "BOOMI Order Management API",
+    "description": "Comprehensive API for managing orders in the BOOMI system. This API provides endpoints for creating, retrieving, updating, and deleting orders, along with customer management capabilities.",
+    "version": "1.2.0",
+    "contact": {
+      "name": "BOOMI API Team",
+      "email": "api-support@boomi.com"
+    }
+  },
+  "host": "api.boomi-orders.example.com",
+  "basePath": "/v1",
+  "schemes": ["https"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "securityDefinitions": {
+    "BasicAuth": {
+      "type": "basic",
+      "description": "Basic HTTP authentication using username and password"
+    },
+    "ApiKeyAuth": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "X-API-Key",
+      "description": "API key for authentication"
+    },
+    "OAuth2": {
+      "type": "oauth2",
+      "flow": "clientCredentials",
+      "tokenUrl": "https://auth.boomi.com/oauth/token",
+      "scopes": {
+        "orders:read": "Read access to orders",
+        "orders:write": "Write access to orders",
+        "orders:delete": "Delete access to orders"
+      }
+    }
+  },
+  "security": [
+    {"BasicAuth": []},
+    {"ApiKeyAuth": []},
+    {"OAuth2": ["orders:read"]}
+  ],
+  "tags": [
+    {
+      "name": "Orders",
+      "description": "Order management operations"
+    },
+    {
+      "name": "Customers",
+      "description": "Customer management operations"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "description": "Check the health status of the API",
+        "tags": ["Health"],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {"type": "string", "example": "healthy"},
+                "timestamp": {"type": "string", "format": "date-time"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "Get all orders",
+        "description": "Retrieve a paginated list of all orders with optional filtering",
+        "tags": ["Orders"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "description": "Number of orders to return (1-100)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Number of orders to skip for pagination"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "enum": ["pending", "processing", "completed", "cancelled"],
+            "description": "Filter orders by status"
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "type": "string",
+            "description": "Filter orders by customer ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of orders with pagination metadata",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "orders": {
+                  "type": "array",
+                  "items": {"$ref": "#/definitions/Order"}
+                },
+                "pagination": {"$ref": "#/definitions/Pagination"}
+              }
+            }
+          },
+          "401": {"description": "Unauthorized - Invalid or missing authentication"},
+          "403": {"description": "Forbidden - Insufficient permissions"},
+          "500": {"description": "Internal Server Error"}
+        },
+        "security": [
+          {"ApiKeyAuth": []},
+          {"OAuth2": ["orders:read"]}
+        ]
+      },
+      "post": {
+        "summary": "Create a new order",
+        "description": "Create a new order in the system with validation",
+        "tags": ["Orders"],
+        "parameters": [
+          {
+            "name": "order",
+            "in": "body",
+            "required": true,
+            "description": "Order object to be created",
+            "schema": {"$ref": "#/definitions/NewOrder"}
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Order created successfully",
+            "schema": {"$ref": "#/definitions/Order"},
+            "headers": {
+              "Location": {
+                "type": "string",
+                "description": "URL of the created order"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid order data",
+            "schema": {"$ref": "#/definitions/Error"}
+          },
+          "401": {"description": "Unauthorized"},
+          "403": {"description": "Forbidden"},
+          "422": {
+            "description": "Unprocessable Entity - Validation errors",
+            "schema": {"$ref": "#/definitions/ValidationError"}
+          }
+        },
+        "security": [
+          {"OAuth2": ["orders:write"]}
+        ]
+      }
+    },
+    "/orders/{orderId}": {
+      "parameters": [
+        {
+          "name": "orderId",
+          "in": "path",
+          "required": true,
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-]{1,50}$",
+          "description": "Unique identifier for the order"
+        }
+      ],
+      "get": {
+        "summary": "Get order by ID",
+        "description": "Retrieve detailed information about a specific order",
+        "tags": ["Orders"],
+        "responses": {
+          "200": {
+            "description": "Order details",
+            "schema": {"$ref": "#/definitions/OrderDetail"}
+          },
+          "404": {
+            "description": "Order not found",
+            "schema": {"$ref": "#/definitions/Error"}
+          },
+          "401": {"description": "Unauthorized"},
+          "403": {"description": "Forbidden"}
+        },
+        "security": [
+          {"ApiKeyAuth": []},
+          {"OAuth2": ["orders:read"]}
+        ]
+      },
+      "put": {
+        "summary": "Update order",
+        "description": "Update an existing order with new information",
+        "tags": ["Orders"],
+        "parameters": [
+          {
+            "name": "order",
+            "in": "body",
+            "required": true,
+            "description": "Updated order object",
+            "schema": {"$ref": "#/definitions/UpdateOrder"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order updated successfully",
+            "schema": {"$ref": "#/definitions/Order"}
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {"$ref": "#/definitions/Error"}
+          },
+          "404": {
+            "description": "Order not found",
+            "schema": {"$ref": "#/definitions/Error"}
+          },
+          "409": {
+            "description": "Conflict - Order cannot be updated in current state",
+            "schema": {"$ref": "#/definitions/Error"}
+          }
+        },
+        "security": [
+          {"OAuth2": ["orders:write"]}
+        ]
+      },
+      "delete": {
+        "summary": "Delete order",
+        "description": "Delete an order (soft delete - marks as cancelled)",
+        "tags": ["Orders"],
+        "responses": {
+          "204": {"description": "Order deleted successfully"},
+          "404": {
+            "description": "Order not found",
+            "schema": {"$ref": "#/definitions/Error"}
+          },
+          "409": {
+            "description": "Conflict - Order cannot be deleted",
+            "schema": {"$ref": "#/definitions/Error"}
+          }
+        },
+        "security": [
+          {"OAuth2": ["orders:delete"]}
+        ]
+      }
+    },
+    "/customers/{customerId}/orders": {
+      "parameters": [
+        {
+          "name": "customerId",
+          "in": "path",
+          "required": true,
+          "type": "string",
+          "description": "Customer identifier"
+        }
+      ],
+      "get": {
+        "summary": "Get orders for a specific customer",
+        "description": "Retrieve all orders for a specific customer",
+        "tags": ["Orders", "Customers"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer orders",
+            "schema": {
+              "type": "array",
+              "items": {"$ref": "#/definitions/Order"}
+            }
+          },
+          "404": {"description": "Customer not found"}
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Order": {
+      "type": "object",
+      "required": ["id", "customerId", "items", "total", "status", "createdAt"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique order identifier",
+          "example": "ORD-2024-001"
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Customer identifier",
+          "example": "CUST-12345"
+        },
+        "items": {
+          "type": "array",
+          "description": "List of order items",
+          "minItems": 1,
+          "items": {"$ref": "#/definitions/OrderItem"}
+        },
+        "total": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "description": "Total order amount",
+          "example": 299.99
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code",
+          "default": "USD",
+          "example": "USD"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "processing", "completed", "cancelled"],
+          "description": "Current order status"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "urgent"],
+          "default": "normal",
+          "description": "Order priority level"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Order creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        },
+        "shippingAddress": {"$ref": "#/definitions/Address"},
+        "billingAddress": {"$ref": "#/definitions/Address"}
+      }
+    },
+    "OrderDetail": {
+      "allOf": [
+        {"$ref": "#/definitions/Order"},
+        {
+          "type": "object",
+          "properties": {
+            "paymentInfo": {"$ref": "#/definitions/PaymentInfo"},
+            "shippingInfo": {"$ref": "#/definitions/ShippingInfo"},
+            "orderHistory": {
+              "type": "array",
+              "items": {"$ref": "#/definitions/OrderHistoryEntry"}
+            }
+          }
+        }
+      ]
+    },
+    "NewOrder": {
+      "type": "object",
+      "required": ["customerId", "items"],
+      "properties": {
+        "customerId": {"type": "string"},
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/definitions/OrderItem"}
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "urgent"],
+          "default": "normal"
+        },
+        "shippingAddress": {"$ref": "#/definitions/Address"},
+        "billingAddress": {"$ref": "#/definitions/Address"},
+        "notes": {"type": "string", "maxLength": 1000}
+      }
+    },
+    "UpdateOrder": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "processing", "completed", "cancelled"]
+        },
+        "items": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/OrderItem"}
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "urgent"]
+        },
+        "notes": {"type": "string", "maxLength": 1000}
+      }
+    },
+    "OrderItem": {
+      "type": "object",
+      "required": ["productId", "quantity", "price"],
+      "properties": {
+        "productId": {
+          "type": "string",
+          "description": "Product identifier",
+          "example": "PROD-ABC123"
+        },
+        "productName": {
+          "type": "string",
+          "description": "Product name",
+          "example": "Premium Widget"
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Quantity ordered"
+        },
+        "price": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "description": "Unit price"
+        },
+        "discount": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Discount percentage"
+        }
+      }
+    },
+    "Address": {
+      "type": "object",
+      "required": ["street", "city", "country"],
+      "properties": {
+        "street": {"type": "string", "example": "123 Main St"},
+        "city": {"type": "string", "example": "New York"},
+        "state": {"type": "string", "example": "NY"},
+        "zipCode": {"type": "string", "example": "10001"},
+        "country": {"type": "string", "example": "USA"}
+      }
+    },
+    "PaymentInfo": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["credit_card", "debit_card", "paypal", "bank_transfer"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "authorized", "captured", "failed", "refunded"]
+        },
+        "transactionId": {"type": "string"},
+        "amount": {"type": "number", "format": "float"}
+      }
+    },
+    "ShippingInfo": {
+      "type": "object",
+      "properties": {
+        "method": {"type": "string"},
+        "carrier": {"type": "string"},
+        "trackingNumber": {"type": "string"},
+        "estimatedDelivery": {"type": "string", "format": "date"},
+        "cost": {"type": "number", "format": "float"}
+      }
+    },
+    "OrderHistoryEntry": {
+      "type": "object",
+      "properties": {
+        "timestamp": {"type": "string", "format": "date-time"},
+        "action": {"type": "string"},
+        "description": {"type": "string"},
+        "userId": {"type": "string"}
+      }
+    },
+    "Pagination": {
+      "type": "object",
+      "properties": {
+        "limit": {"type": "integer"},
+        "offset": {"type": "integer"},
+        "total": {"type": "integer"},
+        "hasMore": {"type": "boolean"}
+      }
+    },
+    "Error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"type": "string"},
+        "message": {"type": "string"},
+        "details": {"type": "string"},
+        "timestamp": {"type": "string", "format": "date-time"}
+      }
+    },
+    "ValidationError": {
+      "type": "object",
+      "properties": {
+        "code": {"type": "string", "example": "validation_failed"},
+        "message": {"type": "string", "example": "Request validation failed"},
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {"type": "string"},
+              "message": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

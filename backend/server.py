@@ -17,7 +17,7 @@ from openai import OpenAI
 import zipfile
 import tempfile
 import shutil
-from pathlib import Path
+import yaml
 
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
@@ -909,6 +909,203 @@ async def analyze_proxy(proxy_id: str):
     except Exception as e:
         logging.error(f"Analysis error: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+# Swagger/OpenAPI Documentation Endpoints
+@api_router.post("/upload-swagger", response_model=Dict[str, str])
+async def upload_swagger(file: UploadFile = File(...)):
+    """Upload Swagger/OpenAPI documentation"""
+    try:
+        # Check file size (10MB limit for docs)
+        max_file_size = 10 * 1024 * 1024  # 10MB
+        content = await file.read()
+        
+        if len(content) > max_file_size:
+            raise HTTPException(status_code=413, detail="File size exceeds 10MB limit")
+        
+        filename_lower = file.filename.lower()
+        
+        # Validate file type
+        if not (filename_lower.endswith('.json') or filename_lower.endswith('.yaml') or filename_lower.endswith('.yml')):
+            raise HTTPException(status_code=400, detail="Only JSON and YAML files are supported")
+        
+        try:
+            if filename_lower.endswith('.json'):
+                spec_data = json.loads(content.decode('utf-8'))
+            else:
+                spec_data = yaml.safe_load(content.decode('utf-8'))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid JSON/YAML format")
+        
+        # Validate basic Swagger/OpenAPI structure
+        if 'swagger' not in spec_data and 'openapi' not in spec_data:
+            raise HTTPException(status_code=400, detail="Not a valid Swagger/OpenAPI specification")
+        
+        # Store the specification
+        spec_id = str(uuid.uuid4())
+        swagger_doc = {
+            "id": spec_id,
+            "filename": file.filename,
+            "original_spec": spec_data,
+            "spec_version": spec_data.get('swagger', spec_data.get('openapi', 'unknown')),
+            "uploaded_at": datetime.now(timezone.utc),
+            "migrated_spec": None,
+            "conversion_status": "pending"
+        }
+        
+        await db.swagger_docs.insert_one(swagger_doc)
+        
+        return {
+            "specId": spec_id,
+            "message": "Swagger documentation uploaded successfully",
+            "originalSpec": json.dumps(spec_data) if isinstance(spec_data, dict) else str(spec_data)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Swagger upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+@api_router.post("/convert-swagger/{spec_id}", response_model=Dict[str, Any])
+async def convert_swagger_to_apigee_x(spec_id: str):
+    """Convert Swagger/OpenAPI to Apigee X format using AI"""
+    try:
+        # Get the swagger document
+        swagger_doc = await db.swagger_docs.find_one({"id": spec_id})
+        if not swagger_doc:
+            raise HTTPException(status_code=404, detail="Swagger document not found")
+        
+        original_spec = swagger_doc["original_spec"]
+        
+        if not openai_client:
+            # Fallback conversion without AI
+            converted_spec = convert_swagger_fallback(original_spec)
+        else:
+            # AI-powered conversion
+            converted_spec = await convert_swagger_with_ai(original_spec)
+        
+        # Update the document with converted spec
+        await db.swagger_docs.update_one(
+            {"id": spec_id},
+            {"$set": {
+                "migrated_spec": converted_spec,
+                "conversion_status": "completed",
+                "converted_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        return {
+            "convertedSpec": converted_spec,
+            "message": "Swagger documentation converted to Apigee X format"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Swagger conversion error: {e}")
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+
+async def convert_swagger_with_ai(original_spec: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert Swagger to Apigee X format using AI"""
+    try:
+        conversion_prompt = f"""
+Convert this Swagger/OpenAPI specification to be optimized for Apigee X:
+
+Original Specification:
+{json.dumps(original_spec, indent=2)[:3000]}...
+
+Requirements for Apigee X conversion:
+1. Upgrade to OpenAPI 3.0+ if it's Swagger 2.0
+2. Add Apigee X specific security policies (OAuth 2.0, API Key)
+3. Add rate limiting and quota policies in x-google-* extensions
+4. Update server URLs for Apigee X format
+5. Add proper error response schemas
+6. Include CORS configuration
+7. Add health check endpoints
+8. Optimize for Apigee X performance
+
+Return a valid OpenAPI 3.0 specification optimized for Apigee X deployment.
+"""
+        
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are an expert in API documentation and Apigee X. Convert Swagger/OpenAPI specifications to be optimized for Apigee X platform."},
+                {"role": "user", "content": conversion_prompt}
+            ],
+            max_tokens=4000,
+            temperature=0.1
+        )
+        
+        response_content = response.choices[0].message.content
+        
+        # Try to extract JSON from the response
+        try:
+            # Look for JSON content in the response
+            json_match = re.search(r'\{.*\}', response_content, re.DOTALL)
+            if json_match:
+                converted_spec = json.loads(json_match.group())
+                return converted_spec
+        except json.JSONDecodeError:
+            pass
+        
+        # Fallback if AI response is not valid JSON
+        return convert_swagger_fallback(original_spec)
+        
+    except Exception as e:
+        logging.error(f"AI Swagger conversion error: {e}")
+        return convert_swagger_fallback(original_spec)
+
+def convert_swagger_fallback(original_spec: Dict[str, Any]) -> Dict[str, Any]:
+    """Fallback conversion without AI"""
+    converted_spec = original_spec.copy()
+    
+    # Convert Swagger 2.0 to OpenAPI 3.0 basic structure
+    if 'swagger' in converted_spec:
+        openapi_spec = {
+            "openapi": "3.0.0",
+            "info": converted_spec.get("info", {}),
+            "servers": [{"url": converted_spec.get("host", "api.example.com") + converted_spec.get("basePath", "")}],
+            "paths": converted_spec.get("paths", {}),
+            "components": {
+                "schemas": converted_spec.get("definitions", {}),
+                "securitySchemes": {
+                    "ApiKeyAuth": {
+                        "type": "apiKey",
+                        "in": "header",
+                        "name": "X-API-Key"
+                    },
+                    "OAuth2": {
+                        "type": "oauth2",
+                        "flows": {
+                            "clientCredentials": {
+                                "tokenUrl": "https://oauth.example.com/token",
+                                "scopes": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "security": [
+                {"ApiKeyAuth": []},
+                {"OAuth2": []}
+            ]
+        }
+        converted_spec = openapi_spec
+    
+    # Add Apigee X extensions
+    converted_spec["x-google-management"] = {
+        "metrics": [
+            {"name": "request_count", "valueType": "INT64", "metricKind": "DELTA"}
+        ],
+        "quota": {
+            "limits": [
+                {"name": "ApiCalls", "metric": "request_count", "unit": "1/min", "values": {"STANDARD": 1000}}
+            ]
+        }
+    }
+    
+    return converted_spec
 
 @api_router.get("/analyses", response_model=List[ProxyAnalysis])
 async def get_analyses():

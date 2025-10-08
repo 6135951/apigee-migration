@@ -46,6 +46,9 @@ def test_large_file():
     """Test with a file that's actually over 100MB"""
     print("Creating 101MB file with random data (no compression)...")
     
+    # Configure base URL
+    base_url = "http://localhost:3000"
+    
     zip_content = create_large_uncompressible_file(101)
     actual_size_mb = len(zip_content) / (1024 * 1024)
     print(f"Actual file size: {actual_size_mb:.2f}MB")
@@ -59,7 +62,7 @@ def test_large_file():
     try:
         print("Uploading large file...")
         response = requests.post(
-            "https://proxy-zip-support.preview.emergentagent.com/api/upload-proxy", 
+            f"{base_url}/api/upload-proxy", 
             files=files, 
             timeout=120
         )

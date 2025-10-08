@@ -8,6 +8,7 @@ import Dashboard from './components/Dashboard';
 import ProxyUpload from './components/ProxyUpload';
 import ProxyAnalysis from './components/ProxyAnalysis';
 import Migration from './components/Migration';
+import ApiDocumentation from './components/ApiDocumentation';
 import NavigationMenu from './components/NavigationMenu';
 import BrandedSplash from './components/BrandedSplash';
 import LoadingScreen from './components/LoadingScreen';
@@ -92,6 +93,8 @@ function App() {
                   <ProxyAnalysis analysisData={analysisData} /> :
                 currentPage === 'migration' ?
                   <Migration analysisData={analysisData} /> :
+                currentPage === 'documentation' ?
+                  <ApiDocumentation /> :
                   <Navigate to="/" replace />
               } />
             </Routes>
