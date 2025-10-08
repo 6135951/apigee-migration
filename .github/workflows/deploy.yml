@@ -24,7 +24,6 @@ jobs:
         MONGO_ROOT_USERNAME=test_user
         MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}
         MONGO_DATABASE=test_db
-        EMERGENT_LLM_KEY=${{ secrets.EMERGENT_LLM_KEY }}
         OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         JWT_SECRET=${{ secrets.JWT_SECRET }}
         CORS_ORIGINS=http://localhost:3000
@@ -73,7 +72,7 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}-backend
         labels: ${{ steps.meta.outputs.labels }}
         build-args: |
-          EMERGENT_LLM_KEY=${{ secrets.EMERGENT_LLM_KEY }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
 
   deploy:
     needs: build-and-push
@@ -86,7 +85,7 @@ jobs:
     - name: Deploy to production
       env:
         # Use GitHub secrets for deployment
-        EMERGENT_LLM_KEY: ${{ secrets.EMERGENT_LLM_KEY }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         MONGO_ROOT_PASSWORD: ${{ secrets.MONGO_ROOT_PASSWORD }}
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -99,7 +98,7 @@ jobs:
           backend:
             image: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:main-backend
             environment:
-              EMERGENT_LLM_KEY: ${EMERGENT_LLM_KEY}
+              OPENAI_API_KEY: ${OPENAI_API_KEY}
               MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
               JWT_SECRET: ${JWT_SECRET}
               ENVIRONMENT: production
