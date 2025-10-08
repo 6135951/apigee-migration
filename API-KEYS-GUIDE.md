@@ -229,7 +229,6 @@ CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
 ## 📞 Support
 
 For API key issues:
-- **Emergent Key**: Contact Emergent support
 - **OpenAI**: Check OpenAI dashboard
 - **Database**: Check MongoDB logs
 - **Application**: Check application logs with `docker-compose logs`
